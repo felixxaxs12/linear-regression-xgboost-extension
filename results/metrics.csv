@@ -1,0 +1,85 @@
+"split","model","component","metric","value"
+"Five-fold CV","Regression","Classifier","roc_auc",0.67465316383762
+"Five-fold CV","Regression","Classifier","average_precision",0.914646787827365
+"Five-fold CV","Regression","Classifier","log_loss",0.400910239971921
+"Five-fold CV","Regression","Classifier","brier",0.122852521534849
+"Five-fold CV","Regression","Classifier","threshold",0.85
+"Five-fold CV","Regression","Classifier","balanced_accuracy",0.64417821757715
+"Five-fold CV","Regression","Classifier","sensitivity",0.645763842561708
+"Five-fold CV","Regression","Classifier","specificity",0.642592592592593
+"Five-fold CV","Regression","Conditional positive-grade regressor","rmse",1.94182897986892
+"Five-fold CV","Regression","Conditional positive-grade regressor","mae",1.28631440396381
+"Five-fold CV","Regression","Conditional positive-grade regressor","r_squared",0.0868645364874586
+"Five-fold CV","Regression","Overall expected grade","rmse",4.60673401880229
+"Five-fold CV","Regression","Overall expected grade","mae",3.40700362498984
+"Five-fold CV","Regression","Overall expected grade","r_squared",0.0832702836771337
+"Five-fold CV","Random forest","Classifier","roc_auc",0.665697193190522
+"Five-fold CV","Random forest","Classifier","average_precision",0.912655878432507
+"Five-fold CV","Random forest","Classifier","log_loss",0.463573387576104
+"Five-fold CV","Random forest","Classifier","brier",0.132284639361989
+"Five-fold CV","Random forest","Classifier","threshold",0.77
+"Five-fold CV","Random forest","Classifier","balanced_accuracy",0.62838991426383
+"Five-fold CV","Random forest","Classifier","sensitivity",0.780853902601734
+"Five-fold CV","Random forest","Classifier","specificity",0.475925925925926
+"Five-fold CV","Random forest","Conditional positive-grade regressor","rmse",1.94504599383832
+"Five-fold CV","Random forest","Conditional positive-grade regressor","mae",1.27263936229718
+"Five-fold CV","Random forest","Conditional positive-grade regressor","r_squared",0.0838364604852769
+"Five-fold CV","Random forest","Overall expected grade","rmse",4.7511039147453
+"Five-fold CV","Random forest","Overall expected grade","mae",3.43229311577158
+"Five-fold CV","Random forest","Overall expected grade","r_squared",0.0249113703405592
+"Five-fold CV","XGBoost","Classifier","roc_auc",0.697484125219282
+"Five-fold CV","XGBoost","Classifier","average_precision",0.922799207918668
+"Five-fold CV","XGBoost","Classifier","log_loss",0.393691418598214
+"Five-fold CV","XGBoost","Classifier","brier",0.120706781876314
+"Five-fold CV","XGBoost","Classifier","threshold",0.84
+"Five-fold CV","XGBoost","Classifier","balanced_accuracy",0.646386479875473
+"Five-fold CV","XGBoost","Classifier","sensitivity",0.659439626417612
+"Five-fold CV","XGBoost","Classifier","specificity",0.633333333333333
+"Five-fold CV","XGBoost","Conditional positive-grade regressor","rmse",1.93803284929404
+"Five-fold CV","XGBoost","Conditional positive-grade regressor","mae",1.27210403157874
+"Five-fold CV","XGBoost","Conditional positive-grade regressor","r_squared",0.0904312699429481
+"Five-fold CV","XGBoost","Overall expected grade","rmse",4.57143331226319
+"Five-fold CV","XGBoost","Overall expected grade","mae",3.39252972660641
+"Five-fold CV","XGBoost","Overall expected grade","r_squared",0.0972659765224583
+"Held-out test","Regression","Classifier","roc_auc",0.667779411764706
+"Held-out test","Regression","Classifier","average_precision",0.910021967232835
+"Held-out test","Regression","Classifier","log_loss",0.404469636636619
+"Held-out test","Regression","Classifier","brier",0.123803610909532
+"Held-out test","Regression","Classifier","threshold",0.85
+"Held-out test","Regression","Classifier","balanced_accuracy",0.639911764705882
+"Held-out test","Regression","Classifier","sensitivity",0.596
+"Held-out test","Regression","Classifier","specificity",0.683823529411765
+"Held-out test","Regression","Conditional positive-grade regressor","rmse",2.04136857514291
+"Held-out test","Regression","Conditional positive-grade regressor","mae",1.34918105081227
+"Held-out test","Regression","Conditional positive-grade regressor","r_squared",0.0859203720266017
+"Held-out test","Regression","Overall expected grade","rmse",4.66666771563711
+"Held-out test","Regression","Overall expected grade","mae",3.52615741369514
+"Held-out test","Regression","Overall expected grade","r_squared",0.0718633596966852
+"Held-out test","Random forest","Classifier","roc_auc",0.632436274509804
+"Held-out test","Random forest","Classifier","average_precision",0.896329918280486
+"Held-out test","Random forest","Classifier","log_loss",0.505869505887426
+"Held-out test","Random forest","Classifier","brier",0.137925584015296
+"Held-out test","Random forest","Classifier","threshold",0.77
+"Held-out test","Random forest","Classifier","balanced_accuracy",0.593578431372549
+"Held-out test","Random forest","Classifier","sensitivity",0.753333333333333
+"Held-out test","Random forest","Classifier","specificity",0.433823529411765
+"Held-out test","Random forest","Conditional positive-grade regressor","rmse",2.04111040793611
+"Held-out test","Random forest","Conditional positive-grade regressor","mae",1.3275653057971
+"Held-out test","Random forest","Conditional positive-grade regressor","r_squared",0.0861515605194211
+"Held-out test","Random forest","Overall expected grade","rmse",4.88322020383669
+"Held-out test","Random forest","Overall expected grade","mae",3.59004257026114
+"Held-out test","Random forest","Overall expected grade","r_squared",-0.0162739141600381
+"Held-out test","XGBoost","Classifier","roc_auc",0.676357843137255
+"Held-out test","XGBoost","Classifier","average_precision",0.913701203082948
+"Held-out test","XGBoost","Classifier","log_loss",0.404943387292918
+"Held-out test","XGBoost","Classifier","brier",0.124175857909596
+"Held-out test","XGBoost","Classifier","threshold",0.84
+"Held-out test","XGBoost","Classifier","balanced_accuracy",0.63556862745098
+"Held-out test","XGBoost","Classifier","sensitivity",0.594666666666667
+"Held-out test","XGBoost","Classifier","specificity",0.676470588235294
+"Held-out test","XGBoost","Conditional positive-grade regressor","rmse",2.02994125561179
+"Held-out test","XGBoost","Conditional positive-grade regressor","mae",1.32104144467789
+"Held-out test","XGBoost","Conditional positive-grade regressor","r_squared",0.0961255293742536
+"Held-out test","XGBoost","Overall expected grade","rmse",4.6323945195643
+"Held-out test","XGBoost","Overall expected grade","mae",3.51520226675121
+"Held-out test","XGBoost","Overall expected grade","r_squared",0.0854462414653512

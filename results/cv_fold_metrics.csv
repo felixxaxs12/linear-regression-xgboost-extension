@@ -1,0 +1,211 @@
+"split","model","component","metric","value"
+"CV fold 1","Regression","Classifier","roc_auc",0.679930555555556
+"CV fold 1","Regression","Classifier","average_precision",0.919489223652608
+"CV fold 1","Regression","Classifier","log_loss",0.398394268123155
+"CV fold 1","Regression","Classifier","brier",0.121716786444227
+"CV fold 1","Regression","Classifier","threshold",0.85
+"CV fold 1","Regression","Classifier","balanced_accuracy",0.65287037037037
+"CV fold 1","Regression","Classifier","sensitivity",0.648333333333333
+"CV fold 1","Regression","Classifier","specificity",0.657407407407407
+"CV fold 1","Regression","Conditional positive-grade regressor","rmse",1.8548621980247
+"CV fold 1","Regression","Conditional positive-grade regressor","mae",1.26213158728762
+"CV fold 1","Regression","Conditional positive-grade regressor","r_squared",0.0729530603548084
+"CV fold 1","Regression","Overall expected grade","rmse",4.59446408760936
+"CV fold 1","Regression","Overall expected grade","mae",3.37930288133376
+"CV fold 1","Regression","Overall expected grade","r_squared",0.0856087899013463
+"CV fold 1","Random forest","Classifier","roc_auc",0.658402777777778
+"CV fold 1","Random forest","Classifier","average_precision",0.909455607159929
+"CV fold 1","Random forest","Classifier","log_loss",0.472743712421529
+"CV fold 1","Random forest","Classifier","brier",0.132882595603881
+"CV fold 1","Random forest","Classifier","threshold",0.77
+"CV fold 1","Random forest","Classifier","balanced_accuracy",0.641666666666667
+"CV fold 1","Random forest","Classifier","sensitivity",0.783333333333333
+"CV fold 1","Random forest","Classifier","specificity",0.5
+"CV fold 1","Random forest","Conditional positive-grade regressor","rmse",1.86358921626785
+"CV fold 1","Random forest","Conditional positive-grade regressor","mae",1.26175221441097
+"CV fold 1","Random forest","Conditional positive-grade regressor","r_squared",0.0642091354549275
+"CV fold 1","Random forest","Overall expected grade","rmse",4.77164191565132
+"CV fold 1","Random forest","Overall expected grade","mae",3.44651160189704
+"CV fold 1","Random forest","Overall expected grade","r_squared",0.0137250337350723
+"CV fold 1","XGBoost","Classifier","roc_auc",0.68599537037037
+"CV fold 1","XGBoost","Classifier","average_precision",0.923625718169073
+"CV fold 1","XGBoost","Classifier","log_loss",0.394120964789228
+"CV fold 1","XGBoost","Classifier","brier",0.120484702179116
+"CV fold 1","XGBoost","Classifier","threshold",0.84
+"CV fold 1","XGBoost","Classifier","balanced_accuracy",0.635092592592593
+"CV fold 1","XGBoost","Classifier","sensitivity",0.668333333333333
+"CV fold 1","XGBoost","Classifier","specificity",0.601851851851852
+"CV fold 1","XGBoost","Conditional positive-grade regressor","rmse",1.866138075892
+"CV fold 1","XGBoost","Conditional positive-grade regressor","mae",1.25598263584367
+"CV fold 1","XGBoost","Conditional positive-grade regressor","r_squared",0.0616475938152825
+"CV fold 1","XGBoost","Overall expected grade","rmse",4.59008595037329
+"CV fold 1","XGBoost","Overall expected grade","mae",3.39306607391213
+"CV fold 1","XGBoost","Overall expected grade","r_squared",0.087350635178945
+"CV fold 2","Regression","Classifier","roc_auc",0.651489197530864
+"CV fold 2","Regression","Classifier","average_precision",0.913629031532663
+"CV fold 2","Regression","Classifier","log_loss",0.41011033234116
+"CV fold 2","Regression","Classifier","brier",0.126227446708089
+"CV fold 2","Regression","Classifier","threshold",0.85
+"CV fold 2","Regression","Classifier","balanced_accuracy",0.614166666666667
+"CV fold 2","Regression","Classifier","sensitivity",0.645
+"CV fold 2","Regression","Classifier","specificity",0.583333333333333
+"CV fold 2","Regression","Conditional positive-grade regressor","rmse",2.08780299856081
+"CV fold 2","Regression","Conditional positive-grade regressor","mae",1.36178532055017
+"CV fold 2","Regression","Conditional positive-grade regressor","r_squared",0.0674893374904385
+"CV fold 2","Regression","Overall expected grade","rmse",4.71418849320067
+"CV fold 2","Regression","Overall expected grade","mae",3.51663461091134
+"CV fold 2","Regression","Overall expected grade","r_squared",0.0462766970119342
+"CV fold 2","Random forest","Classifier","roc_auc",0.657191358024691
+"CV fold 2","Random forest","Classifier","average_precision",0.911674669251321
+"CV fold 2","Random forest","Classifier","log_loss",0.473063741757471
+"CV fold 2","Random forest","Classifier","brier",0.137904011564315
+"CV fold 2","Random forest","Classifier","threshold",0.77
+"CV fold 2","Random forest","Classifier","balanced_accuracy",0.608981481481481
+"CV fold 2","Random forest","Classifier","sensitivity",0.755
+"CV fold 2","Random forest","Classifier","specificity",0.462962962962963
+"CV fold 2","Random forest","Conditional positive-grade regressor","rmse",2.07750431059002
+"CV fold 2","Random forest","Conditional positive-grade regressor","mae",1.3403816149007
+"CV fold 2","Random forest","Conditional positive-grade regressor","r_squared",0.0766664006538363
+"CV fold 2","Random forest","Overall expected grade","rmse",4.8675489381839
+"CV fold 2","Random forest","Overall expected grade","mae",3.56033193786632
+"CV fold 2","Random forest","Overall expected grade","r_squared",-0.0167850696069842
+"CV fold 2","XGBoost","Classifier","roc_auc",0.69141975308642
+"CV fold 2","XGBoost","Classifier","average_precision",0.925346135115204
+"CV fold 2","XGBoost","Classifier","log_loss",0.397181459388282
+"CV fold 2","XGBoost","Classifier","brier",0.122574248121873
+"CV fold 2","XGBoost","Classifier","threshold",0.84
+"CV fold 2","XGBoost","Classifier","balanced_accuracy",0.632314814814815
+"CV fold 2","XGBoost","Classifier","sensitivity",0.635
+"CV fold 2","XGBoost","Classifier","specificity",0.62962962962963
+"CV fold 2","XGBoost","Conditional positive-grade regressor","rmse",2.06939025985396
+"CV fold 2","XGBoost","Conditional positive-grade regressor","mae",1.34435659030367
+"CV fold 2","XGBoost","Conditional positive-grade regressor","r_squared",0.083864792525184
+"CV fold 2","XGBoost","Overall expected grade","rmse",4.6363292126388
+"CV fold 2","XGBoost","Overall expected grade","mae",3.4716453330271
+"CV fold 2","XGBoost","Overall expected grade","r_squared",0.0775198280699254
+"CV fold 3","Regression","Classifier","roc_auc",0.682399691358025
+"CV fold 3","Regression","Classifier","average_precision",0.919739017668983
+"CV fold 3","Regression","Classifier","log_loss",0.398376504608734
+"CV fold 3","Regression","Classifier","brier",0.122986578072906
+"CV fold 3","Regression","Classifier","threshold",0.85
+"CV fold 3","Regression","Classifier","balanced_accuracy",0.646666666666667
+"CV fold 3","Regression","Classifier","sensitivity",0.626666666666667
+"CV fold 3","Regression","Classifier","specificity",0.666666666666667
+"CV fold 3","Regression","Conditional positive-grade regressor","rmse",2.04025160961107
+"CV fold 3","Regression","Conditional positive-grade regressor","mae",1.33032889108646
+"CV fold 3","Regression","Conditional positive-grade regressor","r_squared",0.107451068404065
+"CV fold 3","Regression","Overall expected grade","rmse",4.58213536261452
+"CV fold 3","Regression","Overall expected grade","mae",3.39442829976847
+"CV fold 3","Regression","Overall expected grade","r_squared",0.0967561340406817
+"CV fold 3","Random forest","Classifier","roc_auc",0.676195987654321
+"CV fold 3","Random forest","Classifier","average_precision",0.919401019247274
+"CV fold 3","Random forest","Classifier","log_loss",0.442084596422951
+"CV fold 3","Random forest","Classifier","brier",0.132690552171655
+"CV fold 3","Random forest","Classifier","threshold",0.77
+"CV fold 3","Random forest","Classifier","balanced_accuracy",0.629907407407407
+"CV fold 3","Random forest","Classifier","sensitivity",0.778333333333333
+"CV fold 3","Random forest","Classifier","specificity",0.481481481481481
+"CV fold 3","Random forest","Conditional positive-grade regressor","rmse",2.06370870743376
+"CV fold 3","Random forest","Conditional positive-grade regressor","mae",1.33454488052209
+"CV fold 3","Random forest","Conditional positive-grade regressor","r_squared",0.0868095325685203
+"CV fold 3","Random forest","Overall expected grade","rmse",4.72439438492134
+"CV fold 3","Random forest","Overall expected grade","mae",3.40063072244124
+"CV fold 3","Random forest","Overall expected grade","r_squared",0.039800488180336
+"CV fold 3","XGBoost","Classifier","roc_auc",0.71724537037037
+"CV fold 3","XGBoost","Classifier","average_precision",0.932960713816109
+"CV fold 3","XGBoost","Classifier","log_loss",0.387389312852885
+"CV fold 3","XGBoost","Classifier","brier",0.119362870428189
+"CV fold 3","XGBoost","Classifier","threshold",0.84
+"CV fold 3","XGBoost","Classifier","balanced_accuracy",0.654537037037037
+"CV fold 3","XGBoost","Classifier","sensitivity",0.651666666666667
+"CV fold 3","XGBoost","Classifier","specificity",0.657407407407407
+"CV fold 3","XGBoost","Conditional positive-grade regressor","rmse",2.04932851266551
+"CV fold 3","XGBoost","Conditional positive-grade regressor","mae",1.32585430372402
+"CV fold 3","XGBoost","Conditional positive-grade regressor","r_squared",0.0994916562413355
+"CV fold 3","XGBoost","Overall expected grade","rmse",4.52825640527024
+"CV fold 3","XGBoost","Overall expected grade","mae",3.36582406677291
+"CV fold 3","XGBoost","Overall expected grade","r_squared",0.11787280376005
+"CV fold 4","Regression","Classifier","roc_auc",0.708974834600878
+"CV fold 4","Regression","Classifier","average_precision",0.928599908111444
+"CV fold 4","Regression","Classifier","log_loss",0.389232521795045
+"CV fold 4","Regression","Classifier","brier",0.119399039670736
+"CV fold 4","Regression","Classifier","threshold",0.85
+"CV fold 4","Regression","Classifier","balanced_accuracy",0.661836084832746
+"CV fold 4","Regression","Classifier","sensitivity",0.647746243739566
+"CV fold 4","Regression","Classifier","specificity",0.675925925925926
+"CV fold 4","Regression","Conditional positive-grade regressor","rmse",1.87509632571612
+"CV fold 4","Regression","Conditional positive-grade regressor","mae",1.23901091428167
+"CV fold 4","Regression","Conditional positive-grade regressor","r_squared",0.0915483425921226
+"CV fold 4","Regression","Overall expected grade","rmse",4.49628692979944
+"CV fold 4","Regression","Overall expected grade","mae",3.33789627109931
+"CV fold 4","Regression","Overall expected grade","r_squared",0.12390347535953
+"CV fold 4","Random forest","Classifier","roc_auc",0.694583565201261
+"CV fold 4","Random forest","Classifier","average_precision",0.919921875944243
+"CV fold 4","Random forest","Classifier","log_loss",0.438785851389635
+"CV fold 4","Random forest","Classifier","brier",0.125324751856485
+"CV fold 4","Random forest","Classifier","threshold",0.77
+"CV fold 4","Random forest","Classifier","balanced_accuracy",0.639739071291659
+"CV fold 4","Random forest","Classifier","sensitivity",0.797996661101836
+"CV fold 4","Random forest","Classifier","specificity",0.481481481481481
+"CV fold 4","Random forest","Conditional positive-grade regressor","rmse",1.87266366698901
+"CV fold 4","Random forest","Conditional positive-grade regressor","mae",1.21120466376951
+"CV fold 4","Random forest","Conditional positive-grade regressor","r_squared",0.093903975505074
+"CV fold 4","Random forest","Overall expected grade","rmse",4.63335154931088
+"CV fold 4","Random forest","Overall expected grade","mae",3.31635375358646
+"CV fold 4","Random forest","Overall expected grade","r_squared",0.0696755653034291
+"CV fold 4","XGBoost","Classifier","roc_auc",0.734959500401904
+"CV fold 4","XGBoost","Classifier","average_precision",0.93530831055478
+"CV fold 4","XGBoost","Classifier","log_loss",0.381408000453398
+"CV fold 4","XGBoost","Classifier","brier",0.11675041168799
+"CV fold 4","XGBoost","Classifier","threshold",0.84
+"CV fold 4","XGBoost","Classifier","balanced_accuracy",0.686576392753354
+"CV fold 4","XGBoost","Classifier","sensitivity",0.669449081803005
+"CV fold 4","XGBoost","Classifier","specificity",0.703703703703704
+"CV fold 4","XGBoost","Conditional positive-grade regressor","rmse",1.85732764053549
+"CV fold 4","XGBoost","Conditional positive-grade regressor","mae",1.21562765492287
+"CV fold 4","XGBoost","Conditional positive-grade regressor","r_squared",0.108684005815117
+"CV fold 4","XGBoost","Overall expected grade","rmse",4.46059886282808
+"CV fold 4","XGBoost","Overall expected grade","mae",3.30334362099165
+"CV fold 4","XGBoost","Overall expected grade","r_squared",0.137755842186897
+"CV fold 5","Regression","Classifier","roc_auc",0.661426451493229
+"CV fold 5","Regression","Classifier","average_precision",0.905645115649159
+"CV fold 5","Regression","Classifier","log_loss",0.408431702574032
+"CV fold 5","Regression","Classifier","brier",0.123929399993815
+"CV fold 5","Regression","Classifier","threshold",0.85
+"CV fold 5","Regression","Classifier","balanced_accuracy",0.64536573301181
+"CV fold 5","Regression","Classifier","sensitivity",0.66110183639399
+"CV fold 5","Regression","Classifier","specificity",0.62962962962963
+"CV fold 5","Regression","Conditional positive-grade regressor","rmse",1.83694470805748
+"CV fold 5","Regression","Conditional positive-grade regressor","mae",1.23815620379674
+"CV fold 5","Regression","Conditional positive-grade regressor","r_squared",0.0854673402961454
+"CV fold 5","Regression","Overall expected grade","rmse",4.64368606837714
+"CV fold 5","Regression","Overall expected grade","mae",3.40665796435816
+"CV fold 5","Regression","Overall expected grade","r_squared",0.0630250825272911
+"CV fold 5","Random forest","Classifier","roc_auc",0.642390094602115
+"CV fold 5","Random forest","Classifier","average_precision",0.90503997611925
+"CV fold 5","Random forest","Classifier","log_loss",0.491193036047531
+"CV fold 5","Random forest","Classifier","brier",0.13261191752131
+"CV fold 5","Random forest","Classifier","threshold",0.77
+"CV fold 5","Random forest","Classifier","balanced_accuracy",0.621676559698263
+"CV fold 5","Random forest","Classifier","sensitivity",0.789649415692821
+"CV fold 5","Random forest","Classifier","specificity",0.453703703703704
+"CV fold 5","Random forest","Conditional positive-grade regressor","rmse",1.83305812697642
+"CV fold 5","Random forest","Conditional positive-grade regressor","mae",1.21511517306967
+"CV fold 5","Random forest","Conditional positive-grade regressor","r_squared",0.0893331563306852
+"CV fold 5","Random forest","Overall expected grade","rmse",4.75541702090654
+"CV fold 5","Random forest","Overall expected grade","mae",3.43748113461582
+"CV fold 5","Random forest","Overall expected grade","r_squared",0.0173938525458358
+"CV fold 5","XGBoost","Classifier","roc_auc",0.668397947195944
+"CV fold 5","XGBoost","Classifier","average_precision",0.912435031717555
+"CV fold 5","XGBoost","Classifier","log_loss",0.408360725406522
+"CV fold 5","XGBoost","Classifier","brier",0.124361250549831
+"CV fold 5","XGBoost","Classifier","threshold",0.84
+"CV fold 5","XGBoost","Classifier","balanced_accuracy",0.623431027020342
+"CV fold 5","XGBoost","Classifier","sensitivity",0.672787979966611
+"CV fold 5","XGBoost","Classifier","specificity",0.574074074074074
+"CV fold 5","XGBoost","Conditional positive-grade regressor","rmse",1.83423904349799
+"CV fold 5","XGBoost","Conditional positive-grade regressor","mae",1.21851553163846
+"CV fold 5","XGBoost","Conditional positive-grade regressor","r_squared",0.0881594151202882
+"CV fold 5","XGBoost","Overall expected grade","rmse",4.63928826299821
+"CV fold 5","XGBoost","Overall expected grade","mae",3.4286946496523
+"CV fold 5","XGBoost","Overall expected grade","r_squared",0.0647989673452272

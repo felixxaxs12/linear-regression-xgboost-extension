@@ -1,0 +1,43 @@
+"model","component","metric","mean","sd"
+"Random forest","Classifier","average_precision",0.913098629544404,0.00645209224663898
+"Regression","Classifier","average_precision",0.917420459322971,0.00848040708331592
+"XGBoost","Classifier","average_precision",0.925935181874544,0.00901593441179317
+"Random forest","Classifier","balanced_accuracy",0.628394237309095,0.0135012462776193
+"Regression","Classifier","balanced_accuracy",0.644181104309652,0.0179975659073805
+"XGBoost","Classifier","balanced_accuracy",0.646390372843628,0.025170305256003
+"Random forest","Classifier","brier",0.132282765743529,0.00449017784600871
+"Regression","Classifier","brier",0.122851850177955,0.00253890661624167
+"XGBoost","Classifier","brier",0.1207066965934,0.00293048007445113
+"Random forest","Classifier","log_loss",0.463574187607823,0.0224343305792857
+"Regression","Classifier","log_loss",0.400909065888425,0.0085195821998222
+"XGBoost","Classifier","log_loss",0.393692092578063,0.0102243869346442
+"Random forest","Conditional positive-grade regressor","mae",1.27259970933459,0.0624961651448914
+"Regression","Conditional positive-grade regressor","mae",1.28628258340053,0.056512764633639
+"XGBoost","Conditional positive-grade regressor","mae",1.27206734328654,0.0600639765464874
+"Random forest","Overall expected grade","mae",3.43226183008138,0.0881298173321057
+"Regression","Overall expected grade","mae",3.40698400549421,0.066558934404113
+"XGBoost","Overall expected grade","mae",3.39251474887122,0.0637079686673271
+"Random forest","Conditional positive-grade regressor","r_squared",0.0821844401026087,0.0118680608210924
+"Regression","Conditional positive-grade regressor","r_squared",0.084981829827516,0.0158026902433022
+"XGBoost","Conditional positive-grade regressor","r_squared",0.0883694927034415,0.0178239887595625
+"Random forest","Overall expected grade","r_squared",0.0247619740315378,0.0321933521444225
+"Regression","Overall expected grade","r_squared",0.0831140357681567,0.0300693556407307
+"XGBoost","Overall expected grade","r_squared",0.097059615308209,0.0300257751072008
+"Random forest","Conditional positive-grade regressor","rmse",1.94210480565141,0.118319992511131
+"Regression","Conditional positive-grade regressor","rmse",1.93899156799404,0.116159752491679
+"XGBoost","Conditional positive-grade regressor","rmse",1.93528470648899,0.114082290293936
+"Random forest","Overall expected grade","rmse",4.7504707617948,0.0845234730490796
+"Regression","Overall expected grade","rmse",4.60615218832023,0.0804121103587526
+"XGBoost","Overall expected grade","rmse",4.57091173882172,0.0763394613192731
+"Random forest","Classifier","roc_auc",0.665752756652033,0.0200836395440191
+"Regression","Classifier","roc_auc",0.67684414610771,0.0220983589544163
+"XGBoost","Classifier","roc_auc",0.699603588285002,0.0263970821584248
+"Random forest","Classifier","sensitivity",0.780862548692265,0.0162185077279282
+"Regression","Classifier","sensitivity",0.645769616026711,0.0123599319174429
+"XGBoost","Classifier","sensitivity",0.659447412353923,0.01593094239132
+"Random forest","Classifier","specificity",0.475925925925926,0.0180496191570536
+"Regression","Classifier","specificity",0.642592592592593,0.0373826467373821
+"XGBoost","Classifier","specificity",0.633333333333333,0.0501198837137939
+"Random forest","Classifier","threshold",0.77,0
+"Regression","Classifier","threshold",0.85,0
+"XGBoost","Classifier","threshold",0.84,0

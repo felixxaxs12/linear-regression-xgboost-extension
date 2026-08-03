@@ -1,0 +1,11 @@
+"stage","feature","mean_absolute_shap"
+"Classifier (log-odds)","admission_grade",0.149185662129584
+"Classifier (log-odds)","previous_qualification_grade",0.171147853630631
+"Classifier (log-odds)","age_at_enrollment",0.271570792430108
+"Classifier (log-odds)","gender",0.347105044585655
+"Classifier (log-odds)","scholarship_holder",0.268768632595278
+"Conditional regressor (grade points)","admission_grade",0.289731249819199
+"Conditional regressor (grade points)","previous_qualification_grade",0.12041947393616
+"Conditional regressor (grade points)","age_at_enrollment",0.211576810836792
+"Conditional regressor (grade points)","gender",0.195757895986239
+"Conditional regressor (grade points)","scholarship_holder",0.119619784156481

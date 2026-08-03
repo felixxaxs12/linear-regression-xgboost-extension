@@ -1,0 +1,1218 @@
+---
+title: "Final Project: Two-stage XGBoost extension"
+author: "Yi Zhao"
+date: "2026-08-03"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    code_folding: show
+---
+
+# Reproduction scope
+
+This file reproduces the predictive extension and reconstructs the final linear model from the specification and estimates printed in the original group report. It is not the original source code for that report. The original report was written by Emilia Li, Jingxiu Zeng, Felix Zhao, Shimin Zeng, and Siqi Yang. The extension and this reproducibility file are by Yi Zhao.
+
+Run the file from the repository root. It reads `data/clean_model_data.csv`, leaves both source CSV files and both report PDFs unchanged, and writes derived outputs to `results/`.
+
+# Article-to-code map
+
+| Report item | Code section and output |
+|---|---|
+| Section 2, Table 1 | Data loading, validation, and `results/sample_characteristics.csv` |
+| Sections 3.1 and 4.1, Table 2 | Reconstructed inferential models, `results/inferential_model_table.csv`, and `results/inferential_model_fit.csv` |
+| Section 3.2 | Logistic-plus-log-linear, random-forest, and XGBoost pipeline definitions |
+| Section 3.3, Tables 3-5 | Fixed split, tuning, cross-validation, held-out metrics, and paired bootstrap outputs |
+| Section 3.4 and Section 4.4, Table 6 | Test-set SHAP computation and SHAP summary CSV files |
+| Figure 1 | `results/performance_overview.png` |
+| Figure 2 | `results/shap_dependence.png` |
+
+```{r full-analysis, message=FALSE, warning=FALSE}
+options(stringsAsFactors = FALSE)
+
+# Final Project: reproducible analysis for the predictive extension
+# Author: Yi Zhao
+#
+# Scope and provenance
+# - The inferential model in Manuscript Sections 3.1 and 4.1 is reconstructed
+#   from the specification reported in the original STA302 group report. It is
+#   not presented as the original group source code.
+# - The predictive extension uses only the five enrollment-time predictors fixed
+#   in the report.
+# - This analysis reads data/clean_model_data.csv and writes only to results/.
+#   It never modifies either source CSV or either report PDF.
+
+# Manuscript Section 2 and Table 1: load and validate the analysis data.
+
+extension_seed <- 3022026L
+extension_data_path <- file.path("data", "clean_model_data.csv")
+if (!file.exists(extension_data_path)) {
+  stop("Run this analysis from the repository root; data/clean_model_data.csv was not found.")
+}
+
+extension_output_dir <- "results"
+dir.create(extension_output_dir, recursive = TRUE, showWarnings = FALSE)
+
+extension_packages <- c("xgboost", "randomForest")
+extension_missing_packages <- extension_packages[
+  !vapply(extension_packages, requireNamespace, logical(1), quietly = TRUE)
+]
+if (length(extension_missing_packages) > 0L) {
+  stop(
+    "Install the following packages before running this extension: ",
+    paste(extension_missing_packages, collapse = ", ")
+  )
+}
+
+suppressPackageStartupMessages({
+  library(xgboost)
+  library(randomForest)
+})
+
+extension_features <- c(
+  "admission_grade",
+  "previous_qualification_grade",
+  "age_at_enrollment",
+  "gender",
+  "scholarship_holder"
+)
+
+extension_data <- read.csv(extension_data_path, check.names = FALSE)
+extension_required <- c(extension_features, "grade_year1")
+if (!all(extension_required %in% names(extension_data))) {
+  stop("The cleaned data are missing one or more required columns.")
+}
+
+extension_data <- extension_data[, extension_required]
+if (anyNA(extension_data) || any(!is.finite(as.matrix(extension_data)))) {
+  stop("The extension sample contains missing or non-finite values.")
+}
+if (any(extension_data$grade_year1 < 0)) {
+  stop("grade_year1 contains negative values; the two-stage definition is invalid.")
+}
+
+extension_data$row_id <- seq_len(nrow(extension_data))
+extension_data$positive_grade <- as.integer(extension_data$grade_year1 > 0)
+extension_data$gender <- factor(extension_data$gender, levels = c(0, 1))
+extension_data$scholarship_holder <- factor(
+  extension_data$scholarship_holder,
+  levels = c(0, 1)
+)
+extension_data$log_age <- log(extension_data$age_at_enrollment)
+
+summarize_numeric <- function(variable, values) {
+  data.frame(
+    variable = variable,
+    statistic = c("mean", "sd", "minimum", "maximum"),
+    value = c(mean(values), sd(values), min(values), max(values))
+  )
+}
+
+summarize_indicator <- function(variable, indicator) {
+  data.frame(
+    variable = variable,
+    statistic = c("count", "proportion"),
+    value = c(sum(indicator), mean(indicator))
+  )
+}
+
+sample_characteristics <- rbind(
+  summarize_numeric("grade_year1", extension_data$grade_year1),
+  summarize_indicator("positive_grade", extension_data$positive_grade == 1L),
+  summarize_indicator("zero_grade", extension_data$positive_grade == 0L),
+  summarize_numeric("admission_grade", extension_data$admission_grade),
+  summarize_numeric(
+    "previous_qualification_grade",
+    extension_data$previous_qualification_grade
+  ),
+  summarize_numeric("age_at_enrollment", extension_data$age_at_enrollment),
+  summarize_indicator(
+    "gender_category_1",
+    as.character(extension_data$gender) == "1"
+  ),
+  summarize_indicator(
+    "scholarship_category_1",
+    as.character(extension_data$scholarship_holder) == "1"
+  )
+)
+
+# Manuscript Sections 3.1 and 4.1, Table 2: reconstruct the reported
+# positive-outcome linear model and its larger comparison model.
+positive_inference_data <- extension_data[extension_data$positive_grade == 1L, ]
+inferential_full_model <- lm(
+  log(grade_year1) ~ admission_grade + previous_qualification_grade +
+    log(age_at_enrollment) + gender + scholarship_holder,
+  data = positive_inference_data
+)
+inferential_reduced_model <- lm(
+  log(grade_year1) ~ admission_grade + log(age_at_enrollment) +
+    gender + scholarship_holder,
+  data = positive_inference_data
+)
+inferential_coefficients <- summary(inferential_reduced_model)$coefficients
+inferential_confidence_intervals <- confint(inferential_reduced_model)
+inferential_model_table <- data.frame(
+  term = rownames(inferential_coefficients),
+  estimate = inferential_coefficients[, "Estimate"],
+  standard_error = inferential_coefficients[, "Std. Error"],
+  lower_95 = inferential_confidence_intervals[, 1],
+  upper_95 = inferential_confidence_intervals[, 2],
+  p_value = inferential_coefficients[, "Pr(>|t|)"],
+  row.names = NULL
+)
+inferential_comparison <- anova(inferential_reduced_model, inferential_full_model)
+inferential_model_fit <- data.frame(
+  n = nobs(inferential_reduced_model),
+  r_squared = summary(inferential_reduced_model)$r.squared,
+  adjusted_r_squared = summary(inferential_reduced_model)$adj.r.squared,
+  rmse_log = sqrt(mean(residuals(inferential_reduced_model)^2)),
+  partial_f_p_value = inferential_comparison$`Pr(>F)`[2],
+  aic_full = AIC(inferential_full_model),
+  aic_reduced = AIC(inferential_reduced_model),
+  bic_full = BIC(inferential_full_model),
+  bic_reduced = BIC(inferential_reduced_model)
+)
+
+# Manuscript Sections 3.2 and 3.3: shared metrics and the
+# logistic-plus-log-linear regression benchmark.
+
+make_stratified_split <- function(y, train_prop = 0.80, seed = 1L) {
+  set.seed(seed)
+  train_index <- integer(0)
+  for (level in sort(unique(y))) {
+    candidates <- which(y == level)
+    n_train <- floor(length(candidates) * train_prop)
+    train_index <- c(train_index, sample(candidates, n_train, replace = FALSE))
+  }
+  sort(train_index)
+}
+
+make_stratified_folds <- function(y, k = 5L, seed = 1L) {
+  set.seed(seed)
+  fold_id <- integer(length(y))
+  for (level in sort(unique(y))) {
+    candidates <- sample(which(y == level), replace = FALSE)
+    fold_id[candidates] <- rep(seq_len(k), length.out = length(candidates))
+  }
+  fold_id
+}
+
+clip_probability <- function(p, eps = 1e-6) {
+  pmin(pmax(as.numeric(p), eps), 1 - eps)
+}
+
+roc_auc <- function(y, p) {
+  y <- as.integer(y)
+  n1 <- sum(y == 1L)
+  n0 <- sum(y == 0L)
+  if (n1 == 0L || n0 == 0L) return(NA_real_)
+  ranks <- rank(p, ties.method = "average")
+  (sum(ranks[y == 1L]) - n1 * (n1 + 1) / 2) / (n1 * n0)
+}
+
+average_precision <- function(y, p) {
+  y <- as.integer(y)
+  if (sum(y == 1L) == 0L) return(NA_real_)
+  ordering <- order(p, decreasing = TRUE)
+  score_sorted <- p[ordering]
+  y_sorted <- y[ordering]
+  tie_groups <- rle(score_sorted)
+  group_end <- cumsum(tie_groups$lengths)
+  group_start <- c(1L, head(group_end, -1L) + 1L)
+  positive_by_group <- vapply(
+    seq_along(group_end),
+    function(i) sum(y_sorted[group_start[i]:group_end[i]]),
+    numeric(1)
+  )
+  true_positive <- cumsum(positive_by_group)
+  predicted_positive <- group_end
+  precision <- true_positive / predicted_positive
+  recall <- true_positive / sum(y == 1L)
+  sum(diff(c(0, recall)) * precision)
+}
+
+log_loss <- function(y, p) {
+  p <- clip_probability(p)
+  -mean(y * log(p) + (1 - y) * log(1 - p))
+}
+
+brier_score <- function(y, p) mean((as.numeric(p) - y)^2)
+rmse <- function(y, p) sqrt(mean((as.numeric(p) - y)^2))
+mae <- function(y, p) mean(abs(as.numeric(p) - y))
+r_squared <- function(y, p) 1 - sum((y - p)^2) / sum((y - mean(y))^2)
+
+classification_at_threshold <- function(y, p, threshold) {
+  predicted <- as.integer(p >= threshold)
+  sensitivity <- mean(predicted[y == 1L] == 1L)
+  specificity <- mean(predicted[y == 0L] == 0L)
+  c(
+    threshold = threshold,
+    balanced_accuracy = mean(c(sensitivity, specificity)),
+    sensitivity = sensitivity,
+    specificity = specificity
+  )
+}
+
+choose_balanced_threshold <- function(y, p) {
+  candidates <- seq(0.05, 0.95, by = 0.005)
+  scores <- vapply(
+    candidates,
+    function(threshold) classification_at_threshold(y, p, threshold)["balanced_accuracy"],
+    numeric(1)
+  )
+  candidates[which.max(scores)]
+}
+
+classification_metrics <- function(y, p, threshold) {
+  c(
+    roc_auc = roc_auc(y, p),
+    average_precision = average_precision(y, p),
+    log_loss = log_loss(y, p),
+    brier = brier_score(y, p),
+    classification_at_threshold(y, p, threshold)
+  )
+}
+
+regression_metrics <- function(y, p) {
+  c(rmse = rmse(y, p), mae = mae(y, p), r_squared = r_squared(y, p))
+}
+
+baseline_formula_classifier <- positive_grade ~
+  admission_grade + previous_qualification_grade + log_age +
+  gender + scholarship_holder
+
+baseline_formula_regressor <- log(grade_year1) ~
+  admission_grade + previous_qualification_grade + log_age +
+  gender + scholarship_holder
+
+fit_predict_baseline <- function(training, validation) {
+  classifier <- glm(
+    baseline_formula_classifier,
+    family = binomial(),
+    data = training
+  )
+  positive_training <- training[training$positive_grade == 1L, ]
+  regressor <- lm(baseline_formula_regressor, data = positive_training)
+  smearing_factor <- mean(exp(residuals(regressor)))
+
+  probability_positive <- clip_probability(
+    predict(classifier, newdata = validation, type = "response")
+  )
+  conditional_grade <- pmax(
+    exp(predict(regressor, newdata = validation)) * smearing_factor,
+    0
+  )
+
+  list(
+    p_positive = probability_positive,
+    conditional_grade = conditional_grade,
+    expected_grade = probability_positive * conditional_grade,
+    classifier = classifier,
+    regressor = regressor,
+    smearing_factor = smearing_factor
+  )
+}
+
+rf_predictors <- extension_features
+
+# Manuscript Section 3.2: random-forest benchmark.
+
+tune_random_forest <- function(
+  training,
+  fold_id,
+  mtry_values = 1:5,
+  classifier_nodesize_values = c(1L, 5L, 20L, 50L, 100L),
+  regressor_nodesize_values = c(5L, 10L, 20L, 40L),
+  ntree = 400L
+) {
+  classification_results <- data.frame()
+  regression_results <- data.frame()
+
+  for (mtry_value in mtry_values) {
+    for (nodesize_value in classifier_nodesize_values) {
+      class_prediction <- rep(NA_real_, nrow(training))
+      for (fold in sort(unique(fold_id))) {
+        analysis <- training[fold_id != fold, ]
+        assessment <- training[fold_id == fold, ]
+        set.seed(
+          extension_seed + 100L * mtry_value + 1000L * nodesize_value + fold
+        )
+        classifier <- randomForest(
+          x = analysis[, rf_predictors, drop = FALSE],
+          y = factor(analysis$positive_grade, levels = c(0, 1)),
+          ntree = ntree,
+          mtry = mtry_value,
+          nodesize = nodesize_value
+        )
+        class_prediction[fold_id == fold] <- predict(
+          classifier,
+          newdata = assessment[, rf_predictors, drop = FALSE],
+          type = "prob"
+        )[, "1"]
+      }
+      classification_results <- rbind(
+        classification_results,
+        data.frame(
+          mtry = mtry_value,
+          nodesize = nodesize_value,
+          log_loss = log_loss(training$positive_grade, class_prediction),
+          roc_auc = roc_auc(training$positive_grade, class_prediction)
+        )
+      )
+    }
+  }
+
+  positive_rows <- training$positive_grade == 1L
+  for (mtry_value in mtry_values) {
+    for (nodesize_value in regressor_nodesize_values) {
+      conditional_prediction <- rep(NA_real_, nrow(training))
+      for (fold in sort(unique(fold_id))) {
+        analysis <- training[fold_id != fold, ]
+        assessment <- training[fold_id == fold, ]
+        positive_analysis <- analysis[analysis$positive_grade == 1L, ]
+        set.seed(
+          extension_seed + 20000L + 100L * mtry_value +
+            1000L * nodesize_value + fold
+        )
+        regressor <- randomForest(
+          x = positive_analysis[, rf_predictors, drop = FALSE],
+          y = positive_analysis$grade_year1,
+          ntree = ntree,
+          mtry = mtry_value,
+          nodesize = nodesize_value
+        )
+        conditional_prediction[fold_id == fold] <- predict(
+          regressor,
+          newdata = assessment[, rf_predictors, drop = FALSE]
+        )
+      }
+      regression_results <- rbind(
+        regression_results,
+        data.frame(
+          mtry = mtry_value,
+          nodesize = nodesize_value,
+          rmse = rmse(
+            training$grade_year1[positive_rows],
+            conditional_prediction[positive_rows]
+          )
+        )
+      )
+    }
+  }
+
+  best_classifier_row <- which.min(classification_results$log_loss)
+  best_regressor_row <- which.min(regression_results$rmse)
+  list(
+    classifier = classification_results,
+    regressor = regression_results,
+    best_classifier_mtry = classification_results$mtry[
+      best_classifier_row
+    ],
+    best_classifier_nodesize = classification_results$nodesize[
+      best_classifier_row
+    ],
+    best_regressor_mtry = regression_results$mtry[
+      best_regressor_row
+    ],
+    best_regressor_nodesize = regression_results$nodesize[
+      best_regressor_row
+    ]
+  )
+}
+
+fit_predict_random_forest <- function(
+  training,
+  validation,
+  classifier_mtry,
+  regressor_mtry,
+  classifier_nodesize,
+  regressor_nodesize,
+  ntree = 800L,
+  seed_offset = 0L
+) {
+  set.seed(extension_seed + 20000L + seed_offset)
+  classifier <- randomForest(
+    x = training[, rf_predictors, drop = FALSE],
+    y = factor(training$positive_grade, levels = c(0, 1)),
+    ntree = ntree,
+    mtry = classifier_mtry,
+    nodesize = classifier_nodesize
+  )
+
+  positive_training <- training[training$positive_grade == 1L, ]
+  set.seed(extension_seed + 30000L + seed_offset)
+  regressor <- randomForest(
+    x = positive_training[, rf_predictors, drop = FALSE],
+    y = positive_training$grade_year1,
+    ntree = ntree,
+    mtry = regressor_mtry,
+    nodesize = regressor_nodesize
+  )
+
+  probability_positive <- clip_probability(
+    predict(
+      classifier,
+      newdata = validation[, rf_predictors, drop = FALSE],
+      type = "prob"
+    )[, "1"]
+  )
+  conditional_grade <- pmax(
+    predict(regressor, newdata = validation[, rf_predictors, drop = FALSE]),
+    0
+  )
+
+  list(
+    p_positive = probability_positive,
+    conditional_grade = conditional_grade,
+    expected_grade = probability_positive * conditional_grade,
+    classifier = classifier,
+    regressor = regressor
+  )
+}
+
+# Manuscript Section 3.2: two-stage XGBoost design matrix and models.
+xgb_matrix <- function(data) {
+  matrix_out <- cbind(
+    admission_grade = data$admission_grade,
+    previous_qualification_grade = data$previous_qualification_grade,
+    age_at_enrollment = data$age_at_enrollment,
+    gender = as.numeric(as.character(data$gender)),
+    scholarship_holder = as.numeric(as.character(data$scholarship_holder))
+  )
+  storage.mode(matrix_out) <- "double"
+  matrix_out
+}
+
+xgb_grid <- expand.grid(
+  eta = c(0.03, 0.08),
+  max_depth = c(1L, 2L, 3L),
+  min_child_weight = c(1, 8),
+  subsample = c(0.8, 1.0),
+  KEEP.OUT.ATTRS = FALSE,
+  stringsAsFactors = FALSE
+)
+
+tune_xgboost <- function(
+  x,
+  y,
+  fold_id,
+  objective,
+  metric,
+  grid = xgb_grid,
+  nrounds = 700L,
+  early_stopping_rounds = 35L,
+  seed_offset = 0L
+) {
+  dtrain <- xgb.DMatrix(x, label = y)
+  fold_list <- lapply(sort(unique(fold_id)), function(fold) which(fold_id == fold))
+  tuning_results <- data.frame()
+
+  for (row in seq_len(nrow(grid))) {
+    params <- list(
+      objective = objective,
+      eval_metric = metric,
+      eta = grid$eta[row],
+      max_depth = as.integer(grid$max_depth[row]),
+      min_child_weight = grid$min_child_weight[row],
+      subsample = grid$subsample[row],
+      colsample_bytree = 1,
+      nthread = 1,
+      seed = as.integer(extension_seed + seed_offset + row)
+    )
+
+    set.seed(extension_seed + seed_offset + row)
+    cv_fit <- xgb.cv(
+      params = params,
+      data = dtrain,
+      nrounds = nrounds,
+      folds = fold_list,
+      early_stopping_rounds = early_stopping_rounds,
+      maximize = FALSE,
+      verbose = 0
+    )
+    evaluation <- as.data.frame(cv_fit$evaluation_log)
+    metric_column <- paste0("test_", metric, "_mean")
+    if (!metric_column %in% names(evaluation)) {
+      metric_column <- grep(
+        paste0("^test_", metric, ".*_mean$"),
+        names(evaluation),
+        value = TRUE
+      )[1]
+    }
+    best_iteration <- which.min(evaluation[[metric_column]])
+    tuning_results <- rbind(
+      tuning_results,
+      cbind(
+        grid[row, , drop = FALSE],
+        nrounds = best_iteration,
+        cv_score = evaluation[[metric_column]][best_iteration]
+      )
+    )
+  }
+
+  best_row <- which.min(tuning_results$cv_score)
+  list(
+    results = tuning_results,
+    best = tuning_results[best_row, , drop = FALSE]
+  )
+}
+
+xgb_params_from_row <- function(best_row, objective, metric, seed) {
+  list(
+    objective = objective,
+    eval_metric = metric,
+    eta = best_row$eta,
+    max_depth = as.integer(best_row$max_depth),
+    min_child_weight = best_row$min_child_weight,
+    subsample = best_row$subsample,
+    colsample_bytree = 1,
+    nthread = 1,
+    seed = as.integer(seed)
+  )
+}
+
+fit_predict_xgboost <- function(
+  training,
+  validation,
+  classifier_best,
+  regressor_best,
+  seed_offset = 0L
+) {
+  x_training <- xgb_matrix(training)
+  x_validation <- xgb_matrix(validation)
+
+  classifier_params <- xgb_params_from_row(
+    classifier_best,
+    objective = "binary:logistic",
+    metric = "logloss",
+    seed = extension_seed + 40000L + seed_offset
+  )
+  classifier <- xgb.train(
+    params = classifier_params,
+    data = xgb.DMatrix(x_training, label = training$positive_grade),
+    nrounds = as.integer(classifier_best$nrounds),
+    verbose = 0
+  )
+
+  positive_training <- training[training$positive_grade == 1L, ]
+  regressor_params <- xgb_params_from_row(
+    regressor_best,
+    objective = "reg:squarederror",
+    metric = "rmse",
+    seed = extension_seed + 50000L + seed_offset
+  )
+  regressor <- xgb.train(
+    params = regressor_params,
+    data = xgb.DMatrix(
+      xgb_matrix(positive_training),
+      label = positive_training$grade_year1
+    ),
+    nrounds = as.integer(regressor_best$nrounds),
+    verbose = 0
+  )
+
+  probability_positive <- clip_probability(
+    predict(classifier, xgb.DMatrix(x_validation))
+  )
+  conditional_grade <- pmax(
+    predict(regressor, xgb.DMatrix(x_validation)),
+    0
+  )
+
+  list(
+    p_positive = probability_positive,
+    conditional_grade = conditional_grade,
+    expected_grade = probability_positive * conditional_grade,
+    classifier = classifier,
+    regressor = regressor
+  )
+}
+
+# Manuscript Section 3.3 and Tables 3-5: fixed split, development
+# cross-validation, hyperparameter tuning, held-out evaluation, and bootstrap.
+extension_train_index <- make_stratified_split(
+  extension_data$positive_grade,
+  train_prop = 0.80,
+  seed = extension_seed
+)
+extension_train <- extension_data[extension_train_index, ]
+extension_test <- extension_data[-extension_train_index, ]
+extension_fold_id <- make_stratified_folds(
+  extension_train$positive_grade,
+  k = 5L,
+  seed = extension_seed + 1L
+)
+
+# Tune each machine-learning stage using only the training set.
+rf_tuning <- tune_random_forest(extension_train, extension_fold_id)
+
+xgb_classifier_tuning <- tune_xgboost(
+  x = xgb_matrix(extension_train),
+  y = extension_train$positive_grade,
+  fold_id = extension_fold_id,
+  objective = "binary:logistic",
+  metric = "logloss",
+  seed_offset = 100L
+)
+
+positive_train_for_tuning <- extension_train[extension_train$positive_grade == 1L, ]
+positive_fold_id <- extension_fold_id[extension_train$positive_grade == 1L]
+xgb_regressor_tuning <- tune_xgboost(
+  x = xgb_matrix(positive_train_for_tuning),
+  y = positive_train_for_tuning$grade_year1,
+  fold_id = positive_fold_id,
+  objective = "reg:squarederror",
+  metric = "rmse",
+  seed_offset = 200L
+)
+
+# Five-fold out-of-fold development predictions on the 80% training sample.
+cv_prediction <- data.frame(
+  row_id = extension_train$row_id,
+  fold = extension_fold_id,
+  positive_grade = extension_train$positive_grade,
+  grade_year1 = extension_train$grade_year1
+)
+for (model in c("Regression", "Random forest", "XGBoost")) {
+  cv_prediction[[paste0(model, "__p_positive")]] <- NA_real_
+  cv_prediction[[paste0(model, "__conditional")]] <- NA_real_
+  cv_prediction[[paste0(model, "__expected")]] <- NA_real_
+}
+
+for (fold in seq_len(5L)) {
+  analysis <- extension_train[extension_fold_id != fold, ]
+  assessment <- extension_train[extension_fold_id == fold, ]
+  assessment_rows <- which(extension_fold_id == fold)
+
+  baseline_fit <- fit_predict_baseline(analysis, assessment)
+  rf_fit <- fit_predict_random_forest(
+    analysis,
+    assessment,
+    classifier_mtry = rf_tuning$best_classifier_mtry,
+    regressor_mtry = rf_tuning$best_regressor_mtry,
+    classifier_nodesize = rf_tuning$best_classifier_nodesize,
+    regressor_nodesize = rf_tuning$best_regressor_nodesize,
+    seed_offset = fold
+  )
+  xgb_fit <- fit_predict_xgboost(
+    analysis,
+    assessment,
+    classifier_best = xgb_classifier_tuning$best,
+    regressor_best = xgb_regressor_tuning$best,
+    seed_offset = fold
+  )
+
+  cv_prediction[assessment_rows, "Regression__p_positive"] <- baseline_fit$p_positive
+  cv_prediction[assessment_rows, "Regression__conditional"] <- baseline_fit$conditional_grade
+  cv_prediction[assessment_rows, "Regression__expected"] <- baseline_fit$expected_grade
+  cv_prediction[assessment_rows, "Random forest__p_positive"] <- rf_fit$p_positive
+  cv_prediction[assessment_rows, "Random forest__conditional"] <- rf_fit$conditional_grade
+  cv_prediction[assessment_rows, "Random forest__expected"] <- rf_fit$expected_grade
+  cv_prediction[assessment_rows, "XGBoost__p_positive"] <- xgb_fit$p_positive
+  cv_prediction[assessment_rows, "XGBoost__conditional"] <- xgb_fit$conditional_grade
+  cv_prediction[assessment_rows, "XGBoost__expected"] <- xgb_fit$expected_grade
+}
+
+if (anyNA(cv_prediction)) stop("At least one cross-validation prediction is missing.")
+
+extension_models <- c("Regression", "Random forest", "XGBoost")
+extension_thresholds <- setNames(
+  vapply(
+    extension_models,
+    function(model) choose_balanced_threshold(
+      cv_prediction$positive_grade,
+      cv_prediction[[paste0(model, "__p_positive")]]
+    ),
+    numeric(1)
+  ),
+  extension_models
+)
+
+# Refit each pipeline once on the full training sample and evaluate once on test.
+baseline_final <- fit_predict_baseline(extension_train, extension_test)
+rf_final <- fit_predict_random_forest(
+  extension_train,
+  extension_test,
+  classifier_mtry = rf_tuning$best_classifier_mtry,
+  regressor_mtry = rf_tuning$best_regressor_mtry,
+  classifier_nodesize = rf_tuning$best_classifier_nodesize,
+  regressor_nodesize = rf_tuning$best_regressor_nodesize,
+  seed_offset = 99L
+)
+xgb_final <- fit_predict_xgboost(
+  extension_train,
+  extension_test,
+  classifier_best = xgb_classifier_tuning$best,
+  regressor_best = xgb_regressor_tuning$best,
+  seed_offset = 99L
+)
+
+test_prediction <- data.frame(
+  row_id = extension_test$row_id,
+  positive_grade = extension_test$positive_grade,
+  grade_year1 = extension_test$grade_year1,
+  Regression__p_positive = baseline_final$p_positive,
+  Regression__conditional = baseline_final$conditional_grade,
+  Regression__expected = baseline_final$expected_grade,
+  `Random forest__p_positive` = rf_final$p_positive,
+  `Random forest__conditional` = rf_final$conditional_grade,
+  `Random forest__expected` = rf_final$expected_grade,
+  XGBoost__p_positive = xgb_final$p_positive,
+  XGBoost__conditional = xgb_final$conditional_grade,
+  XGBoost__expected = xgb_final$expected_grade,
+  check.names = FALSE
+)
+
+collect_metrics <- function(prediction_data, data_split, thresholds) {
+  output <- data.frame()
+  positive_rows <- prediction_data$positive_grade == 1L
+  for (model in extension_models) {
+    class_values <- classification_metrics(
+      prediction_data$positive_grade,
+      prediction_data[[paste0(model, "__p_positive")]],
+      thresholds[[model]]
+    )
+    conditional_values <- regression_metrics(
+      prediction_data$grade_year1[positive_rows],
+      prediction_data[[paste0(model, "__conditional")]][positive_rows]
+    )
+    overall_values <- regression_metrics(
+      prediction_data$grade_year1,
+      prediction_data[[paste0(model, "__expected")]]
+    )
+    output <- rbind(
+      output,
+      data.frame(
+        split = data_split,
+        model = model,
+        component = "Classifier",
+        metric = names(class_values),
+        value = as.numeric(class_values)
+      ),
+      data.frame(
+        split = data_split,
+        model = model,
+        component = "Conditional positive-grade regressor",
+        metric = names(conditional_values),
+        value = as.numeric(conditional_values)
+      ),
+      data.frame(
+        split = data_split,
+        model = model,
+        component = "Overall expected grade",
+        metric = names(overall_values),
+        value = as.numeric(overall_values)
+      )
+    )
+  }
+  output
+}
+
+extension_metrics <- rbind(
+  collect_metrics(cv_prediction, "Five-fold CV", extension_thresholds),
+  collect_metrics(test_prediction, "Held-out test", extension_thresholds)
+)
+
+cv_fold_metrics <- data.frame()
+for (fold in seq_len(5L)) {
+  fold_data <- cv_prediction[cv_prediction$fold == fold, ]
+  fold_metrics <- collect_metrics(fold_data, paste0("CV fold ", fold), extension_thresholds)
+  cv_fold_metrics <- rbind(cv_fold_metrics, fold_metrics)
+}
+
+cv_summary <- aggregate(
+  value ~ model + component + metric,
+  data = cv_fold_metrics,
+  FUN = function(x) c(mean = mean(x), sd = sd(x))
+)
+cv_summary <- data.frame(
+  model = cv_summary$model,
+  component = cv_summary$component,
+  metric = cv_summary$metric,
+  mean = cv_summary$value[, "mean"],
+  sd = cv_summary$value[, "sd"]
+)
+
+paired_bootstrap_difference <- function(
+  observed,
+  xgb_prediction,
+  comparator_prediction,
+  statistic = c("rmse", "mae"),
+  replicates = 2000L,
+  seed = extension_seed + 60000L
+) {
+  statistic <- match.arg(statistic)
+  metric_function <- if (statistic == "rmse") rmse else mae
+  set.seed(seed)
+  n <- length(observed)
+  differences <- replicate(replicates, {
+    rows <- sample.int(n, n, replace = TRUE)
+    metric_function(observed[rows], xgb_prediction[rows]) -
+      metric_function(observed[rows], comparator_prediction[rows])
+  })
+  c(
+    difference = metric_function(observed, xgb_prediction) -
+      metric_function(observed, comparator_prediction),
+    lower_95 = unname(quantile(differences, 0.025)),
+    upper_95 = unname(quantile(differences, 0.975))
+  )
+}
+
+bootstrap_comparisons <- data.frame()
+for (comparator in c("Regression", "Random forest")) {
+  for (statistic in c("rmse", "mae")) {
+    difference <- paired_bootstrap_difference(
+      observed = test_prediction$grade_year1,
+      xgb_prediction = test_prediction$XGBoost__expected,
+      comparator_prediction = test_prediction[[paste0(comparator, "__expected")]],
+      statistic = statistic,
+      seed = extension_seed + 60000L + which(extension_models == comparator) * 10L +
+        which(c("rmse", "mae") == statistic)
+    )
+    bootstrap_comparisons <- rbind(
+      bootstrap_comparisons,
+      data.frame(
+        comparator = comparator,
+        metric = statistic,
+        difference_xgboost_minus_comparator = difference["difference"],
+        lower_95 = difference["lower_95"],
+        upper_95 = difference["upper_95"]
+      )
+    )
+  }
+}
+
+# Manuscript Sections 3.4 and 4.4, Table 6 and Figure 2: SHAP values on the
+# untouched test set. Classifier SHAP is on the log-odds scale; regressor SHAP
+# is on the original conditional grade scale.
+x_test_matrix <- xgb_matrix(extension_test)
+classifier_shap <- predict(
+  xgb_final$classifier,
+  xgb.DMatrix(x_test_matrix),
+  predcontrib = TRUE
+)
+positive_test_rows <- extension_test$positive_grade == 1L
+regressor_shap <- predict(
+  xgb_final$regressor,
+  xgb.DMatrix(x_test_matrix[positive_test_rows, , drop = FALSE]),
+  predcontrib = TRUE
+)
+
+shap_feature_names <- colnames(x_test_matrix)
+colnames(classifier_shap) <- c(shap_feature_names, "BIAS")
+colnames(regressor_shap) <- c(shap_feature_names, "BIAS")
+
+shap_importance <- rbind(
+  data.frame(
+    stage = "Classifier (log-odds)",
+    feature = shap_feature_names,
+    mean_absolute_shap = colMeans(abs(classifier_shap[, shap_feature_names, drop = FALSE]))
+  ),
+  data.frame(
+    stage = "Conditional regressor (grade points)",
+    feature = shap_feature_names,
+    mean_absolute_shap = colMeans(abs(regressor_shap[, shap_feature_names, drop = FALSE]))
+  )
+)
+
+quantile_shap_summary <- function(feature_values, shap_values, bins = 10L) {
+  breaks <- unique(quantile(
+    feature_values,
+    probs = seq(0, 1, length.out = bins + 1L),
+    na.rm = TRUE,
+    type = 8
+  ))
+  if (length(breaks) < 3L) {
+    return(data.frame(
+      bin = as.character(feature_values),
+      n = as.integer(table(feature_values)[as.character(feature_values)]),
+      mean_feature = feature_values,
+      mean_shap = shap_values
+    ))
+  }
+  group <- cut(feature_values, breaks = breaks, include.lowest = TRUE, ordered_result = TRUE)
+  data.frame(
+    bin = levels(group),
+    n = as.numeric(table(group)),
+    mean_feature = as.numeric(tapply(feature_values, group, mean)),
+    mean_shap = as.numeric(tapply(shap_values, group, mean))
+  )
+}
+
+shap_dependence_summary <- data.frame()
+for (feature in c(
+  "admission_grade",
+  "previous_qualification_grade",
+  "age_at_enrollment"
+)) {
+  stage1_summary <- quantile_shap_summary(
+    x_test_matrix[, feature],
+    classifier_shap[, feature]
+  )
+  stage1_summary$stage <- "Classifier (log-odds)"
+  stage1_summary$feature <- feature
+
+  stage2_summary <- quantile_shap_summary(
+    x_test_matrix[positive_test_rows, feature],
+    regressor_shap[, feature]
+  )
+  stage2_summary$stage <- "Conditional regressor (grade points)"
+  stage2_summary$feature <- feature
+
+  shap_dependence_summary <- rbind(
+    shap_dependence_summary,
+    stage1_summary,
+    stage2_summary
+  )
+}
+
+shap_binary_summary <- data.frame()
+for (feature in c("gender", "scholarship_holder")) {
+  for (level in c(0, 1)) {
+    stage1_rows <- x_test_matrix[, feature] == level
+    stage2_values <- x_test_matrix[positive_test_rows, feature]
+    stage2_rows <- stage2_values == level
+    shap_binary_summary <- rbind(
+      shap_binary_summary,
+      data.frame(
+        stage = "Classifier (log-odds)",
+        feature = feature,
+        level = level,
+        n = sum(stage1_rows),
+        mean_shap = mean(classifier_shap[stage1_rows, feature])
+      ),
+      data.frame(
+        stage = "Conditional regressor (grade points)",
+        feature = feature,
+        level = level,
+        n = sum(stage2_rows),
+        mean_shap = mean(regressor_shap[stage2_rows, feature])
+      )
+    )
+  }
+}
+
+# Manuscript Tables 1-6: save auditable numerical outputs.
+write.csv(
+  sample_characteristics,
+  file.path(extension_output_dir, "sample_characteristics.csv"),
+  row.names = FALSE
+)
+write.csv(
+  inferential_model_table,
+  file.path(extension_output_dir, "inferential_model_table.csv"),
+  row.names = FALSE
+)
+write.csv(
+  inferential_model_fit,
+  file.path(extension_output_dir, "inferential_model_fit.csv"),
+  row.names = FALSE
+)
+write.csv(
+  extension_metrics,
+  file.path(extension_output_dir, "metrics.csv"),
+  row.names = FALSE
+)
+write.csv(
+  cv_fold_metrics,
+  file.path(extension_output_dir, "cv_fold_metrics.csv"),
+  row.names = FALSE
+)
+write.csv(
+  cv_summary,
+  file.path(extension_output_dir, "cv_summary.csv"),
+  row.names = FALSE
+)
+write.csv(
+  bootstrap_comparisons,
+  file.path(extension_output_dir, "bootstrap_comparisons.csv"),
+  row.names = FALSE
+)
+write.csv(
+  rf_tuning$classifier,
+  file.path(extension_output_dir, "rf_classifier_tuning.csv"),
+  row.names = FALSE
+)
+write.csv(
+  rf_tuning$regressor,
+  file.path(extension_output_dir, "rf_regressor_tuning.csv"),
+  row.names = FALSE
+)
+write.csv(
+  xgb_classifier_tuning$results,
+  file.path(extension_output_dir, "xgb_classifier_tuning.csv"),
+  row.names = FALSE
+)
+write.csv(
+  xgb_regressor_tuning$results,
+  file.path(extension_output_dir, "xgb_regressor_tuning.csv"),
+  row.names = FALSE
+)
+write.csv(
+  shap_importance,
+  file.path(extension_output_dir, "shap_importance.csv"),
+  row.names = FALSE
+)
+write.csv(
+  shap_dependence_summary,
+  file.path(extension_output_dir, "shap_dependence_summary.csv"),
+  row.names = FALSE
+)
+write.csv(
+  shap_binary_summary,
+  file.path(extension_output_dir, "shap_binary_summary.csv"),
+  row.names = FALSE
+)
+write.csv(
+  data.frame(
+    split = c(rep("train", nrow(extension_train)), rep("test", nrow(extension_test))),
+    row_id = c(extension_train$row_id, extension_test$row_id),
+    positive_grade = c(
+      extension_train$positive_grade,
+      extension_test$positive_grade
+    )
+  ),
+  file.path(extension_output_dir, "split_membership.csv"),
+  row.names = FALSE
+)
+
+# Manuscript Figure 1: held-out predictive performance.
+png(
+  file.path(extension_output_dir, "performance_overview.png"),
+  width = 2200,
+  height = 1050,
+  res = 180
+)
+par(mfrow = c(1, 2), mar = c(7, 5, 3, 1))
+test_overall <- subset(
+  extension_metrics,
+  split == "Held-out test" & component == "Overall expected grade" &
+    metric %in% c("rmse", "mae")
+)
+test_overall_matrix <- xtabs(value ~ metric + model, data = test_overall)
+barplot(
+  test_overall_matrix[c("rmse", "mae"), extension_models, drop = FALSE],
+  beside = TRUE,
+  col = c("#355C7D", "#6C9BCF"),
+  ylab = "Grade points (lower is better)",
+  las = 2,
+  main = "Held-out overall prediction error"
+)
+legend(
+  "top",
+  legend = c("RMSE", "MAE"),
+  fill = c("#355C7D", "#6C9BCF"),
+  horiz = TRUE,
+  bty = "n"
+)
+test_classifier <- subset(
+  extension_metrics,
+  split == "Held-out test" & component == "Classifier" &
+    metric %in% c("roc_auc", "average_precision")
+)
+test_classifier_matrix <- xtabs(value ~ metric + model, data = test_classifier)
+barplot(
+  test_classifier_matrix[c("roc_auc", "average_precision"), extension_models, drop = FALSE],
+  beside = TRUE,
+  col = c("#4C956C", "#88B04B"),
+  ylim = c(0, 1),
+  ylab = "Area under curve (higher is better)",
+  las = 2,
+  main = "Held-out positive-grade classification"
+)
+legend(
+  "top",
+  legend = c("ROC-AUC", "Average precision"),
+  fill = c("#4C956C", "#88B04B"),
+  horiz = TRUE,
+  bty = "n"
+)
+dev.off()
+
+# Manuscript supplementary figure: global SHAP importance by stage.
+png(
+  file.path(extension_output_dir, "shap_importance.png"),
+  width = 2200,
+  height = 1050,
+  res = 180
+)
+par(mfrow = c(1, 2), mar = c(5, 12, 4, 1))
+for (stage_name in unique(shap_importance$stage)) {
+  stage_data <- shap_importance[shap_importance$stage == stage_name, ]
+  stage_data <- stage_data[order(stage_data$mean_absolute_shap), ]
+  barplot(
+    stage_data$mean_absolute_shap,
+    names.arg = gsub("_", " ", stage_data$feature),
+    horiz = TRUE,
+    las = 1,
+    cex.names = 0.85,
+    col = "#355C7D",
+    xlab = "Mean absolute SHAP",
+    main = stage_name
+  )
+}
+dev.off()
+
+# Manuscript Figure 2: test-set SHAP dependence for continuous predictors.
+png(
+  file.path(extension_output_dir, "shap_dependence.png"),
+  width = 2400,
+  height = 1500,
+  res = 180
+)
+par(mfrow = c(2, 3), mar = c(4.5, 4.5, 3, 1))
+for (stage in c("Classifier", "Regressor")) {
+  for (feature in c(
+    "admission_grade",
+    "previous_qualification_grade",
+    "age_at_enrollment"
+  )) {
+    if (stage == "Classifier") {
+      x_values <- x_test_matrix[, feature]
+      y_values <- classifier_shap[, feature]
+      y_label <- "SHAP (log-odds)"
+    } else {
+      x_values <- x_test_matrix[positive_test_rows, feature]
+      y_values <- regressor_shap[, feature]
+      y_label <- "SHAP (grade points)"
+    }
+    plot(
+      x_values,
+      y_values,
+      pch = 16,
+      cex = 0.55,
+      col = grDevices::adjustcolor("#355C7D", alpha.f = 0.30),
+      xlab = gsub("_", " ", feature),
+      ylab = y_label,
+      main = paste(stage, "-", gsub("_", " ", feature))
+    )
+    lines(lowess(x_values, y_values, f = 0.55), col = "#C44536", lwd = 3)
+    abline(h = 0, lty = 3, col = "grey50")
+  }
+}
+dev.off()
+
+session_details <- capture.output(sessionInfo())
+writeLines(session_details, file.path(extension_output_dir, "session_info.txt"))
+
+cat("Two-stage extension completed.\n")
+cat("Training rows:", nrow(extension_train), " Test rows:", nrow(extension_test), "\n")
+cat("Positive-grade prevalence (train/test):",
+    mean(extension_train$positive_grade), "/",
+    mean(extension_test$positive_grade), "\n")
+cat("Selected RF mtry (classifier/regressor):",
+    rf_tuning$best_classifier_mtry, "/",
+    rf_tuning$best_regressor_mtry, "\n")
+cat("Selected RF nodesize (classifier/regressor):",
+    rf_tuning$best_classifier_nodesize, "/",
+    rf_tuning$best_regressor_nodesize, "\n")
+cat("Selected XGBoost classifier settings:\n")
+print(xgb_classifier_tuning$best)
+cat("Selected XGBoost regressor settings:\n")
+print(xgb_regressor_tuning$best)
+cat("Held-out test metrics:\n")
+print(subset(extension_metrics, split == "Held-out test"))
+cat("SHAP importance:\n")
+print(shap_importance[order(shap_importance$stage, -shap_importance$mean_absolute_shap), ])
+```
