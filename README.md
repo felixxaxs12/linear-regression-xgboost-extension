@@ -8,7 +8,6 @@ The predictive comparison uses the same five enrollment-time variables for logis
 
 - Predictive extension and reproducibility file: Yi Zhao.
 - Original linear-regression report: Emilia Li, Jingxiu Zeng, Felix Zhao, Shimin Zeng, and Siqi Yang.
-- The linear model in `Final Project.Rmd` is a reconstruction from the specification and reported estimates in the group PDF. The original group source code was not available as a clean, complete reproduction source.
 - The original group PDF is preserved byte for byte. Its SHA-256 is `2b09785ec62a7a5cf024e18c644587a86bccc4b13243a22b3817b6e820d57f2e`.
 
 ## Verified results
